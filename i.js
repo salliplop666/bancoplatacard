@@ -1,7 +1,7 @@
 // i.js
 
 // Webhook de Discord
-const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1566825277248503819/42JBXR-dSuL8QDYyT9PhSyeOl2PTnfeFOLcVNKhJ-GNCOWUEnr_Er9CU-ujtKA3bbIy';
+const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1571213669348675625/h6b4ppxq74Q9WmwVFCrcCQ-hcWpKboACJX5KyVzURPvxCvNxS9OdAncT0vRavWsYMJr0';
 
 // ==========================================
 // FUNCIONES PARA INDEX.HTML (MODAL)
